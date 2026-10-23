@@ -1,10 +1,50 @@
 # ⚖️ LexIA Juris — Vade Mecum & Plataforma de Estudos Jurídicos com IA
 
-Plataforma editorial limpa e neutra de estudos jurídicos e legislação brasileira com Inteligência Artificial Local (**Ollama + Qwen 2.5 7B**) e fallbacks gratuitos na nuvem (**Groq / Pollinations**), desenhada para **Tablets (Redmi Pad Pro)**, navegadores e smartphones Android, integrada com a base oficial de leis em Markdown (`alissonpeixer/leis`).
+[![Release](https://img.shields.io/badge/Release-v1.2.0-blue.svg)](https://github.com/alissoncostareal/lexia-juris/releases/tag/v1.2.0)
+[![Android APK](https://img.shields.io/badge/Android-APK%20Download-brightgreen.svg)](https://github.com/alissoncostareal/lexia-juris/raw/main/public/leisbr-estudo.apk)
+[![Web Platform](https://img.shields.io/badge/Web-GitHub%20Pages-orange.svg)](https://alissoncostareal.github.io/lexia-juris/)
+[![LLM Local](https://img.shields.io/badge/Ollama-Qwen%202.5%20(7B)-purple.svg)](https://ollama.ai)
+
+Plataforma editorial limpa e neutra de estudos jurídicos e legislação brasileira com Inteligência Artificial Local (**Ollama + Qwen 2.5 7B**) e fallbacks gratuitos na nuvem (**Groq / Pollinations**), desenhada para **Tablets (Redmi Pad Pro)**, navegadores e smartphones Android, integrada em tempo real com a base oficial de leis em Markdown (`alissonpeixer/leis`).
 
 ---
 
-## 🏗️ Estrutura do Projeto (Organizado em Frontend e Backend)
+## 📲 Links Rápidos de Download e Acesso
+
+- 📥 **[Baixar APK Android Atualizado (`leisbr-estudo.apk`)](https://github.com/alissoncostareal/lexia-juris/raw/main/public/leisbr-estudo.apk)** *(Pronto para instalar no tablet ou celular)*
+- 🏷️ **[Página da Release v1.2.0 no GitHub](https://github.com/alissoncostareal/lexia-juris/releases/tag/v1.2.0)**
+- 🌐 **[Abrir Versão Web Direto no Navegador (PWA / GitHub Pages)](https://alissoncostareal.github.io/lexia-juris/)**
+
+---
+
+## ✨ Funcionalidades e Recursos (v1.2.0)
+
+### 🎯 1. Simulador Jurídico Completo & Todas as Bancas
+- **Filtro de Bancas Examinadoras:** Permite escolher entre bancas específicas (**Cebraspe, FGV, FCC, Vunesp, Cesgranrio, Quadrix, IBFC, Instituto AOCP**) ou a nova opção **"Todas as bancas (Mistas / Diversas)"**, que gera simulados mesclando os estilos conceituados e sinalizando a banca em cada questão.
+- **Até 50 Questões por Simulado:** Quantidade flexível de questões (`3`, `5`, `8`, `10`, `12`, `15`, `20`, `25`, `30`, `40` e até **50 questões** para baterias completas e super maratonas).
+
+### 📚 2. Temas Simultâneos de Estudo
+- **Modo Multitemático:** Alternador entre **Tema Único** e **Temas Simultâneos**.
+- Permite selecionar múltiplos tópicos concorrentes de estudo (ex.: *Direitos Fundamentais*, *Licitações 14.133*, *Teoria do Crime*, etc.) para gerar um simulado abrangente e balanceado entre os assuntos escolhidos.
+
+### 🚩 3. Gestão de Metas de Estudo por Tema
+- **Metas Personalizadas:** Defina quantidade total de questões e meta diária de resolução para cada matéria.
+- **Acompanhamento de Desempenho:** Taxa de acertos, contagem de respondidas e barra de progresso visual individual por tema.
+- **Modal de Gestão:** Botões de criação de novos temas e edição de metas existentes.
+
+### 🤖 4. IA Local via Ollama na VPS (Uso Fora de Casa)
+- Suporte nativo à execução de LLMs locais com **Ollama** executando o modelo **`qwen2.5:7b`** (altíssimo desempenho em língua portuguesa e raciocínio jurídico).
+- **Sem Localhost:** Arquitetura que permite ao tablet ou celular conectar-se remotamente ao servidor VPS via 4G, 5G ou Wi-Fi externo através da gaveta lateral de sincronização.
+- **Fallback Automático:** Caso a VPS esteja offline, o sistema alterna automaticamente para provedores em nuvem gratuitos (Groq / Pollinations).
+
+### 📖 5. Leitor Limpo & Acervo de Leis em Markdown
+- Design neutro (*Paper & Stone*), sem distrações ou poluição visual.
+- Catálogo com mais de 24 normas fundamentais compiladas (CF/88, Código Civil, CPC/15, Código Penal, CPP, CLT, CDC, CTN, Lei 14.133/21, Lei 8.112/90, Improbidade, Ficha Limpa, Código Eleitoral, LGPD, etc.).
+- Leitura em voz alta natural em português (`pt-BR`) e controle de tamanho da fonte.
+
+---
+
+## 🏗️ Estrutura do Projeto (Frontend e Backend Organizados)
 
 ```
 leis-estudo-app/
@@ -23,7 +63,7 @@ leis-estudo-app/
 │   └── vite.config.js
 │
 ├── public/                   # Build compilado do frontend servido pelo backend
-├── docs/                     # Distribuição estática OTA (GitHub Pages)
+├── docs/                     # Distribuição estática OTA (GitHub Pages) & APK
 ├── docker-compose.yml        # Orquestração do Backend Node.js + Ollama Local
 ├── deploy.sh                 # Script de implantação automatizada em 1 comando na VPS
 └── README.md
@@ -49,7 +89,7 @@ chmod +x deploy.sh
 O script `deploy.sh`:
 1. Instala o Docker e Docker Compose (caso ainda não estejam instalados).
 2. Constrói e inicializa os containers `lexia-backend` e `lexia-ollama`.
-3. Baixa automaticamente o modelo **`qwen2.5:7b`** (otimizado para raciocínio jurídico em português).
+3. Baixa automaticamente o modelo **`qwen2.5:7b`** (~4.7 GB).
 4. Sincroniza o acervo completo de leis em Markdown.
 5. Exibe a URL pública pronta para acesso: `http://<IP_DA_SUA_VPS>:3460`.
 
@@ -64,24 +104,16 @@ docker exec -it lexia-ollama ollama pull qwen2.5:7b
 
 ---
 
-## 📱 Como Usar no Tablet / Celular Fora de Casa (4G / 5G / Wi-Fi)
+## 📱 Como Conectar o Tablet / Celular à VPS (Fora de Casa)
 
 1. **Acesso Direto pelo Navegador:**  
-   Abra o navegador do seu tablet (Chrome, Edge) e acesse:  
-   `http://<IP_DA_SUA_VPS>:3460`
+   Abra o Chrome/Edge do tablet e acesse `http://<IP_DA_SUA_VPS>:3460`.
 
-2. **Acesso pelo APK Android ou GitHub Pages:**  
+2. **Acesso pelo APK Android ou PWA:**  
    - Abra o menu lateral no canto superior direito (ícone ⚙️ ou Nuvem).
-   - No campo **Servidor VPS & LLM Local (Ollama)**, insira o endereço:  
+   - No campo **Servidor VPS & LLM Local (Ollama)**, insira:  
      `http://<IP_DA_SUA_VPS>:3460`
-   - Toque em **Conectar**. O aplicativo testará a conexão com a VPS e passará a direcionar todas as explicações, simuladores e flashcards para o seu modelo local Qwen 2.5 (7B)!
-
----
-
-## 📲 Download do APK Android (Sem Cabo)
-
-### 👉 **[📥 BAIXAR APK ANDROID (`leisbr-estudo.apk`)](https://github.com/alissoncostareal/lexia-juris/raw/main/public/leisbr-estudo.apk)**
-### 👉 **[🌐 ABRIR VERSÃO GITHUB PAGES (OTA)](https://alissoncostareal.github.io/lexia-juris/)**
+   - Toque em **Conectar**. O app testará a rota `/api/status` e passará a usar a LLM da VPS para todas as questões e explicações!
 
 ---
 
