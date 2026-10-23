@@ -273,6 +273,57 @@ function parseLawIntoArticles(markdownContent) {
   return articles;
 }
 
+const DEFAULT_STUDY_GOALS = [
+  {
+    id: 'goal-cf88-art5',
+    title: 'Direitos e Garantias Fundamentais',
+    lawId: 'cf88',
+    lawTitle: 'CF/88',
+    focusTopic: 'Art. 5º CF/88 (Remédios Constitucionais, Inviolabilidade e Liberdades)',
+    goalCount: 30,
+    answeredCount: 0,
+    correctCount: 0,
+    dailyGoal: 10,
+    active: true
+  },
+  {
+    id: 'goal-cf88-adm',
+    title: 'Administração Pública e Servidores',
+    lawId: 'cf88',
+    lawTitle: 'CF/88',
+    focusTopic: 'Arts. 37 a 41 CF/88 (Princípios LIMPE, Concursos, Estabilidade)',
+    goalCount: 25,
+    answeredCount: 0,
+    correctCount: 0,
+    dailyGoal: 8,
+    active: true
+  },
+  {
+    id: 'goal-licitacoes',
+    title: 'Nova Lei de Licitações (Lei 14.133/21)',
+    lawId: 'lei-licitacoes-14133',
+    lawTitle: 'Lei 14.133/21',
+    focusTopic: 'Modalidades de Licitação, Critérios de Julgamento e Contratação Direta',
+    goalCount: 20,
+    answeredCount: 0,
+    correctCount: 0,
+    dailyGoal: 5,
+    active: true
+  },
+  {
+    id: 'goal-penal',
+    title: 'Direito Penal - Teoria do Crime e Penas',
+    lawId: 'cod-penal',
+    lawTitle: 'Código Penal',
+    focusTopic: 'Fato Típico, Ilicitude, Culpabilidade e Crimes contra a Adm. Pública',
+    goalCount: 25,
+    answeredCount: 0,
+    correctCount: 0,
+    dailyGoal: 10,
+    active: true
+  }
+];
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('leitor-artigos');
 
@@ -302,24 +353,47 @@ export default function App() {
   const [drawerQuizAnswer, setDrawerQuizAnswer] = useState(null);
   const [drawerDynamicQuiz, setDrawerDynamicQuiz] = useState(null);
 
+  // SIMULADOR & TEMAS SIMULTÂNEOS
+  const [simStudyMode, setSimStudyMode] = useState('single'); // 'single' | 'multi'
+  const [simSelectedGoalIds, setSimSelectedGoalIds] = useState(() => 
+    DEFAULT_STUDY_GOALS.slice(0, 2).map(g => g.id)
+  );
   const [simTheme, setSimTheme] = useState('Direitos e Garantias Fundamentais (Art. 5º CF/88)');
-  const [simBanca, setSimBanca] = useState('Cebraspe / FGV');
+  const [simBanca, setSimBanca] = useState('Todas as bancas');
   const [simDifficulty, setSimDifficulty] = useState('Médio (Concurso/OAB)');
-  const [simCount, setSimCount] = useState(5);
+  const [simCount, setSimCount] = useState(10);
+  const [simQuestionsFilter, setSimQuestionsFilter] = useState('Todas');
+  const [simThemeFilter, setSimThemeFilter] = useState('Todos');
   const [simLoading, setSimLoading] = useState(false);
   const [simQuizData, setSimQuizData] = useState(null);
   const [simAnswers, setSimAnswers] = useState({});
   const [simRevealed, setSimRevealed] = useState({});
 
+  // MODAL DE GESTÃO DE METAS
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [editingGoal, setEditingGoal] = useState(null);
+  const [goalFormTitle, setGoalFormTitle] = useState('');
+  const [goalFormLawId, setGoalFormLawId] = useState('cf88');
+  const [goalFormFocus, setGoalFormFocus] = useState('');
+  const [goalFormTotal, setGoalFormTotal] = useState(30);
+  const [goalFormDaily, setGoalFormDaily] = useState(10);
+
   const [progress, setProgress] = useState(() => {
     try {
       const saved = localStorage.getItem('lexia_juris_progress');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (!parsed.studyGoals || !parsed.studyGoals.length) {
+          parsed.studyGoals = DEFAULT_STUDY_GOALS;
+        }
+        return parsed;
+      }
     } catch {}
     return {
       stats: { questionsAnswered: 0, questionsCorrect: 0, topicsStudied: 1, byTheme: {} },
       notes: [],
-      savedQuestions: []
+      savedQuestions: [],
+      studyGoals: DEFAULT_STUDY_GOALS
     };
   });
   const [newNoteText, setNewNoteText] = useState('');
@@ -576,14 +650,117 @@ export default function App() {
     }
   };
 
+  const handleOpenNewGoalModal = () => {
+    setEditingGoal(null);
+    setGoalFormTitle('');
+    setGoalFormLawId(selectedLawId || 'cf88');
+    setGoalFormFocus('');
+    setGoalFormTotal(30);
+    setGoalFormDaily(10);
+    setShowGoalModal(true);
+  };
+
+  const handleOpenEditGoalModal = (goal) => {
+    setEditingGoal(goal);
+    setGoalFormTitle(goal.title);
+    setGoalFormLawId(goal.lawId || 'cf88');
+    setGoalFormFocus(goal.focusTopic || '');
+    setGoalFormTotal(goal.goalCount || 30);
+    setGoalFormDaily(goal.dailyGoal || 10);
+    setShowGoalModal(true);
+  };
+
+  const handleSaveGoal = () => {
+    if (!goalFormTitle.trim()) return;
+    const selectedLawMeta = catalog.find(l => l.id === goalFormLawId) || STANDALONE_CATALOG.find(l => l.id === goalFormLawId) || STANDALONE_CATALOG[0];
+    const lawTitle = selectedLawMeta?.shortTitle || selectedLawMeta?.shortName || 'Lei Seca';
+    const currentGoals = progress.studyGoals || DEFAULT_STUDY_GOALS;
+
+    if (editingGoal) {
+      const updated = currentGoals.map(g => g.id === editingGoal.id ? {
+        ...g,
+        title: goalFormTitle.trim(),
+        lawId: goalFormLawId,
+        lawTitle,
+        focusTopic: goalFormFocus.trim(),
+        goalCount: Math.max(1, Number(goalFormTotal) || 30),
+        dailyGoal: Math.max(1, Number(goalFormDaily) || 10)
+      } : g);
+      const nextProg = { ...progress, studyGoals: updated };
+      persistProgress(nextProg);
+    } else {
+      const newGoal = {
+        id: `goal-${Date.now()}`,
+        title: goalFormTitle.trim(),
+        lawId: goalFormLawId,
+        lawTitle,
+        focusTopic: goalFormFocus.trim(),
+        goalCount: Math.max(1, Number(goalFormTotal) || 30),
+        answeredCount: 0,
+        correctCount: 0,
+        dailyGoal: Math.max(1, Number(goalFormDaily) || 10),
+        active: true,
+        createdAt: new Date().toLocaleDateString('pt-BR')
+      };
+      const nextProg = { ...progress, studyGoals: [...currentGoals, newGoal] };
+      persistProgress(nextProg);
+      setSimSelectedGoalIds(prev => [...prev, newGoal.id]);
+    }
+    setShowGoalModal(false);
+  };
+
+  const handleDeleteGoal = (goalId) => {
+    const updated = (progress.studyGoals || []).filter(g => g.id !== goalId);
+    const nextProg = { ...progress, studyGoals: updated };
+    persistProgress(nextProg);
+    setSimSelectedGoalIds(prev => prev.filter(id => id !== goalId));
+  };
+
+  const handleIncrementGoalProgress = (goalId) => {
+    const updated = (progress.studyGoals || []).map(g => g.id === goalId ? {
+      ...g,
+      answeredCount: (g.answeredCount || 0) + 1,
+      correctCount: (g.correctCount || 0) + 1
+    } : g);
+    const currentStats = progress.stats || { questionsAnswered: 0, questionsCorrect: 0, topicsStudied: 1, byTheme: {} };
+    const updatedStats = {
+      ...currentStats,
+      questionsAnswered: (currentStats.questionsAnswered || 0) + 1,
+      questionsCorrect: (currentStats.questionsCorrect || 0) + 1
+    };
+    persistProgress({ ...progress, stats: updatedStats, studyGoals: updated });
+  };
+
+  const handleStartSimFromGoal = (goal) => {
+    setSimStudyMode('multi');
+    setSimSelectedGoalIds([goal.id]);
+    setSimTheme(goal.title);
+    if (goal.lawId) setSelectedLawId(goal.lawId);
+    setActiveTab('simulador-ia');
+  };
+
   const handleGenerateSimulation = async () => {
     setSimLoading(true);
     setSimQuizData(null);
     setSimAnswers({});
     setSimRevealed({});
+    setSimQuestionsFilter('Todas');
+    setSimThemeFilter('Todos');
 
-    const excerpt = `${activeArticle.key} - ${activeArticle.caput}\n${(activeArticle.incisos || []).slice(0, 10).map(i => `${i.num} - ${i.text}`).join('\n')}`;
-    const targetTopic = simTheme || `${currentLaw?.shortTitle || 'CF/88'} • ${activeArticle.key}`;
+    const isMultiMode = simStudyMode === 'multi';
+    const selectedGoals = (progress.studyGoals || DEFAULT_STUDY_GOALS).filter(g => (simSelectedGoalIds || []).includes(g.id));
+
+    let excerpt = '';
+    let targetTopic = '';
+
+    if (isMultiMode && selectedGoals.length > 0) {
+      targetTopic = selectedGoals.map(g => `${g.title} (${g.lawTitle})`).join('; ');
+      excerpt = `TEMAS SIMULTÂNEOS SELECIONADOS PARA O SIMULADO:\n` +
+        selectedGoals.map((g, idx) => `Tema ${idx + 1}: ${g.title} [${g.lawTitle}] - Foco: ${g.focusTopic || g.title}`).join('\n');
+    } else {
+      excerpt = `${activeArticle.key} - ${activeArticle.caput}\n${(activeArticle.incisos || []).slice(0, 10).map(i => `${i.num} - ${i.text}`).join('\n')}`;
+      targetTopic = simTheme || `${currentLaw?.shortTitle || 'CF/88'} • ${activeArticle.key}`;
+    }
 
     try {
       let quizPayload = null;
@@ -604,28 +781,59 @@ export default function App() {
       } catch {}
 
       if (!quizPayload || !quizPayload.questions?.length) {
-        const sysPrompt = `Você é uma banca examinadora jurídica (${simBanca}). Retorne APENAS um objeto JSON válido com a estrutura:
+        const isAllBancas = simBanca === 'Todas as bancas' || simBanca === 'Todas';
+        const bancaPromptDesc = isAllBancas
+          ? 'uma comissão de bancas examinadoras jurídicas brasileiras (mesclando estilos conceituados: Cebraspe, FGV, FCC, Vunesp, Cesgranrio, Quadrix, IBFC, AOCP)'
+          : `uma banca examinadora jurídica (${simBanca})`;
+        const bancaFieldDesc = isAllBancas
+          ? 'Nome da Banca (ex: FGV, Cebraspe, FCC, Vunesp, Cesgranrio)'
+          : simBanca;
+
+        const sysPrompt = `Você é ${bancaPromptDesc}. Retorne APENAS um objeto JSON válido no formato estrito:
 {
-  "topicSummary": "Resumo objetivo do tema.",
+  "topicSummary": "Resumo objetivo e prático do simulado.",
   "questions": [
     {
       "id": 1,
-      "banca": "${simBanca}",
-      "articleRef": "Artigo correspondente",
+      "banca": "${bancaFieldDesc}",
+      "themeTitle": "Título do tema correspondente",
+      "articleRef": "Artigo correspondente (ex: Art. 5º, XI)",
       "statement": "Enunciado completo...",
-      "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
+      "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
       "answer": "A",
-      "explanation": "Fundamentação legal...",
-      "distractorAnalysis": "Análise das alternativas..."
+      "explanation": "Fundamentação legal detalhada...",
+      "distractorAnalysis": "Breve análise das alternativas..."
     }
   ]
 }`;
-        const usrPrompt = `Gere ${simCount} questões inéditas nível "${simDifficulty}" sobre o tema "${targetTopic}" (${currentLaw?.shortTitle || 'CF/88'}). Base legal:\n${excerpt}`;
-        const rawJson = await callDirectCloudAI(sysPrompt, usrPrompt, true);
+
+        const multiPromptText = isMultiMode && selectedGoals.length > 0
+          ? `Gere exatamente ${simCount} questões inéditas nível "${simDifficulty}" distribuídas harmonicamente entre os seguintes TEMAS SIMULTÂNEOS DE ESTUDO:
+${selectedGoals.map((g, i) => `${i + 1}. ${g.title} (${g.lawTitle}) [Foco: ${g.focusTopic || g.title}]`).join('\n')}
+IMPORTANTE: Para cada questão, preencha o campo "themeTitle" com o nome exato do tema pertencente.${isAllBancas ? ' Varie os estilos entre bancas examinadoras (Cebraspe, FGV, FCC, Vunesp, Cesgranrio etc.) e indique no campo "banca".' : ''}`
+          : `Gere ${simCount} questões inéditas nível "${simDifficulty}" sobre o tema "${targetTopic}" (${currentLaw?.shortTitle || 'CF/88'})${isAllBancas ? ', variando os estilos entre bancas examinadoras (Cebraspe, FGV, FCC, Vunesp, Cesgranrio etc.) e preenchendo o campo "banca"' : ''}. Base legal:\n${excerpt}`;
+
+        const rawJson = await callDirectCloudAI(sysPrompt, multiPromptText, true);
         quizPayload = JSON.parse(rawJson.replace(/```json|```/g, '').trim());
       }
 
-      if (quizPayload) setSimQuizData(quizPayload);
+      if (quizPayload && quizPayload.questions?.length) {
+        if (isMultiMode && selectedGoals.length > 0) {
+          quizPayload.questions = quizPayload.questions.map((q, idx) => {
+            let matchedGoal = selectedGoals.find(g => 
+              q.themeTitle && (g.title.toLowerCase().includes(q.themeTitle.toLowerCase()) || q.themeTitle.toLowerCase().includes(g.title.toLowerCase()))
+            );
+            if (!matchedGoal) matchedGoal = selectedGoals[idx % selectedGoals.length];
+            return {
+              ...q,
+              goalId: matchedGoal?.id,
+              themeTitle: matchedGoal?.title || q.themeTitle || targetTopic,
+              lawTitle: matchedGoal?.lawTitle || currentLaw?.shortTitle || 'CF/88'
+            };
+          });
+        }
+        setSimQuizData(quizPayload);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -642,7 +850,7 @@ export default function App() {
 
   const recordAnswerResult = async (questionObj, chosenOption) => {
     const isCorrect = questionObj.answer?.trim().toUpperCase().startsWith(chosenOption);
-    const themeKey = currentLaw?.shortTitle || 'Constitucional';
+    const themeKey = questionObj.themeTitle || currentLaw?.shortTitle || 'Constitucional';
     const currentStats = progress.stats || { questionsAnswered: 0, questionsCorrect: 0, topicsStudied: 1, byTheme: {} };
     const prevTheme = currentStats.byTheme?.[themeKey] || { answered: 0, correct: 0 };
 
@@ -659,12 +867,29 @@ export default function App() {
       }
     };
 
+    // Atualiza o progresso das metas simultâneas de estudo
+    const updatedGoals = (progress.studyGoals || DEFAULT_STUDY_GOALS).map(g => {
+      const match = (questionObj.goalId && g.id === questionObj.goalId) ||
+                    (questionObj.themeTitle && (g.title.toLowerCase().includes(questionObj.themeTitle.toLowerCase()) || questionObj.themeTitle.toLowerCase().includes(g.title.toLowerCase()))) ||
+                    (g.lawTitle && (questionObj.lawTitle || currentLaw?.shortTitle) && g.lawTitle.toLowerCase() === (questionObj.lawTitle || currentLaw?.shortTitle).toLowerCase());
+      if (match) {
+        return {
+          ...g,
+          answeredCount: (g.answeredCount || 0) + 1,
+          correctCount: (g.correctCount || 0) + (isCorrect ? 1 : 0)
+        };
+      }
+      return g;
+    });
+
     const nextSavedQuestions = !isCorrect
       ? [
           {
             ...questionObj,
+            banca: questionObj.banca || simBanca,
+            themeTitle: questionObj.themeTitle || themeKey,
             chosen: chosenOption,
-            lawTitle: currentLaw?.shortTitle || 'CF/88',
+            lawTitle: questionObj.lawTitle || currentLaw?.shortTitle || 'CF/88',
             date: new Date().toLocaleDateString('pt-BR')
           },
           ...(progress.savedQuestions || [])
@@ -674,6 +899,7 @@ export default function App() {
     const nextProg = {
       ...progress,
       stats: updatedStats,
+      studyGoals: updatedGoals,
       savedQuestions: nextSavedQuestions
     };
     persistProgress(nextProg);
@@ -737,6 +963,37 @@ export default function App() {
       return matchArea && matchSearch;
     });
   }, [catalog, libraryAreaFilter, librarySearch]);
+
+  const availableSimBancas = useMemo(() => {
+    if (!simQuizData?.questions?.length) return [];
+    const set = new Set(['Todas']);
+    simQuizData.questions.forEach(q => {
+      const b = (q.banca || simBanca || '').trim();
+      if (b) set.add(b);
+    });
+    return Array.from(set);
+  }, [simQuizData, simBanca]);
+
+  const availableSimThemes = useMemo(() => {
+    if (!simQuizData?.questions?.length) return [];
+    const set = new Set(['Todos']);
+    simQuizData.questions.forEach(q => {
+      const t = (q.themeTitle || '').trim();
+      if (t) set.add(t);
+    });
+    return Array.from(set);
+  }, [simQuizData]);
+
+  const filteredSimQuestions = useMemo(() => {
+    if (!simQuizData?.questions) return [];
+    return simQuizData.questions
+      .map((q, i) => ({ ...q, originalIdx: i }))
+      .filter(q => {
+        const matchBanca = simQuestionsFilter === 'Todas' || (q.banca || simBanca || '').trim() === simQuestionsFilter;
+        const matchTheme = simThemeFilter === 'Todos' || (q.themeTitle || '').trim() === simThemeFilter;
+        return matchBanca && matchTheme;
+      });
+  }, [simQuizData, simQuestionsFilter, simThemeFilter, simBanca]);
 
   const headerTitle = {
     'codigos-biblioteca': 'Biblioteca',
@@ -1152,49 +1409,161 @@ export default function App() {
         )}
 
         {/* =========================================================
-            ABA 3: SIMULADOR (Limpo e Direto)
+            ABA 3: SIMULADOR (Com Suporte a Temas Simultâneos & Todas as Bancas)
            ========================================================= */}
         {activeTab === 'simulador-ia' && (
           <div className="space-y-4">
-            <div className="bg-white rounded-2xl border border-stone-200/90 p-5 space-y-4">
-              <div className="flex items-center justify-between">
+            <div className="bg-white rounded-2xl border border-stone-200/90 p-5 space-y-4 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-100 pb-3">
                 <div>
-                  <h2 className="text-base font-semibold text-stone-900">
-                    Gerador de Questões
+                  <h2 className="text-base font-semibold text-stone-900 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-stone-700 text-[20px]">psychology</span>
+                    Simulador Jurídico com IA
                   </h2>
                   <p className="text-xs text-stone-500">
-                    Questões inéditas baseadas no texto legal ({currentLaw?.shortTitle || 'CF/88'})
+                    Geração de questões inéditas baseadas na letra da lei e súmulas
                   </p>
+                </div>
+
+                {/* Seletor de Modo de Estudo */}
+                <div className="flex items-center bg-stone-100 rounded-xl p-1 text-xs font-medium self-start sm:self-auto">
+                  <button
+                    onClick={() => setSimStudyMode('single')}
+                    className={`px-3 py-1.5 rounded-lg transition-colors ${
+                      simStudyMode === 'single'
+                        ? 'bg-white text-stone-900 shadow-xs font-semibold'
+                        : 'text-stone-600 hover:text-stone-900'
+                    }`}
+                  >
+                    Tema Único
+                  </button>
+                  <button
+                    onClick={() => setSimStudyMode('multi')}
+                    className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
+                      simStudyMode === 'multi'
+                        ? 'bg-white text-stone-900 shadow-xs font-semibold'
+                        : 'text-stone-600 hover:text-stone-900'
+                    }`}
+                  >
+                    <span>Temas Simultâneos</span>
+                    {(simSelectedGoalIds || []).length > 0 && (
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-stone-900 text-white font-mono">
+                        {simSelectedGoalIds.length}
+                      </span>
+                    )}
+                  </button>
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-stone-600">
-                  Tema ou artigo
-                </label>
-                <input
-                  type="text"
-                  value={simTheme}
-                  onChange={e => setSimTheme(e.target.value)}
-                  placeholder="Ex: Art. 5º, Inviolabilidade domiciliar, Licitações..."
-                  className="w-full px-3 py-2.5 rounded-xl bg-stone-50 border border-stone-200 text-sm text-stone-900 focus:outline-none focus:border-stone-400"
-                />
-              </div>
+              {/* MODO TEMA ÚNICO */}
+              {simStudyMode === 'single' && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-medium text-stone-600">
+                      Tema ou Artigo da Lei ({currentLaw?.shortTitle || 'CF/88'})
+                    </label>
+                    <span className="text-[11px] text-stone-400">
+                      Artigo ativo: {activeArticle.key}
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    value={simTheme}
+                    onChange={e => setSimTheme(e.target.value)}
+                    placeholder="Ex: Art. 5º, Inviolabilidade domiciliar, Licitações, Atos Administrativos..."
+                    className="w-full px-3 py-2.5 rounded-xl bg-stone-50 border border-stone-200 text-sm text-stone-900 focus:outline-none focus:border-stone-400"
+                  />
+                </div>
+              )}
 
-              <div className="grid grid-cols-3 gap-2.5">
+              {/* MODO TEMAS SIMULTÂNEOS */}
+              {simStudyMode === 'multi' && (
+                <div className="space-y-2.5 p-3.5 rounded-xl bg-stone-50/80 border border-stone-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[18px] text-stone-700">checklist</span>
+                      <span className="text-xs font-semibold text-stone-900">
+                        Selecione os temas simultâneos para o simulado:
+                      </span>
+                    </div>
+                    <button
+                      onClick={handleOpenNewGoalModal}
+                      className="text-[11px] font-medium text-stone-900 hover:underline flex items-center gap-0.5"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">add</span>
+                      Adicionar Novo Tema/Meta
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                    {(progress.studyGoals || DEFAULT_STUDY_GOALS).map(goal => {
+                      const isSelected = (simSelectedGoalIds || []).includes(goal.id);
+                      const percent = Math.min(100, Math.round(((goal.answeredCount || 0) / (goal.goalCount || 30)) * 100));
+                      return (
+                        <div
+                          key={goal.id}
+                          onClick={() => {
+                            setSimSelectedGoalIds(prev => 
+                              prev.includes(goal.id)
+                                ? (prev.length > 1 ? prev.filter(id => id !== goal.id) : prev)
+                                : [...prev, goal.id]
+                            );
+                          }}
+                          className={`p-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
+                            isSelected
+                              ? 'bg-white border-stone-900 shadow-xs ring-1 ring-stone-900/10'
+                              : 'bg-stone-100/70 border-stone-200/80 text-stone-600 hover:bg-white'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-1 mb-1">
+                            <span className="font-semibold text-stone-900 line-clamp-1">
+                              {goal.title}
+                            </span>
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] shrink-0 font-medium ${
+                              isSelected ? 'bg-stone-900 text-white' : 'bg-stone-200 text-stone-700'
+                            }`}>
+                              {goal.lawTitle || 'Lei'}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-stone-500">
+                            <span>Progresso da meta:</span>
+                            <span className="font-mono font-medium text-stone-800">
+                              {goal.answeredCount || 0}/{goal.goalCount} ({percent}%)
+                            </span>
+                          </div>
+                          <div className="w-full bg-stone-200 h-1.5 rounded-full mt-1.5 overflow-hidden">
+                            <div
+                              className="bg-stone-800 h-full rounded-full transition-all"
+                              style={{ width: `${percent}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* SELETORES: BANCA, DIFICULDADE, QUANTIDADE */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <div>
                   <label className="block text-xs font-medium text-stone-600 mb-1">
-                    Banca
+                    Banca Examinadora
                   </label>
                   <select
                     value={simBanca}
                     onChange={e => setSimBanca(e.target.value)}
-                    className="w-full p-2 rounded-xl bg-stone-50 border border-stone-200 text-xs text-stone-800"
+                    className="w-full p-2.5 rounded-xl bg-stone-50 border border-stone-200 text-xs text-stone-800 focus:outline-none focus:border-stone-400"
                   >
-                    <option>Cebraspe / FGV</option>
-                    <option>FGV / OAB</option>
-                    <option>FCC</option>
-                    <option>Vunesp</option>
+                    <option value="Todas as bancas">Todas as bancas (Mistas / Diversas)</option>
+                    <option value="Cebraspe">Cebraspe</option>
+                    <option value="FGV">FGV (Concursos & OAB)</option>
+                    <option value="FCC">FCC (Fundação Carlos Chagas)</option>
+                    <option value="Vunesp">Vunesp</option>
+                    <option value="Cesgranrio">Cesgranrio (CNU / Bancos)</option>
+                    <option value="Quadrix">Quadrix</option>
+                    <option value="IBFC">IBFC</option>
+                    <option value="Instituto AOCP">Instituto AOCP</option>
                   </select>
                 </div>
                 <div>
@@ -1204,25 +1573,33 @@ export default function App() {
                   <select
                     value={simDifficulty}
                     onChange={e => setSimDifficulty(e.target.value)}
-                    className="w-full p-2 rounded-xl bg-stone-50 border border-stone-200 text-xs text-stone-800"
+                    className="w-full p-2.5 rounded-xl bg-stone-50 border border-stone-200 text-xs text-stone-800 focus:outline-none focus:border-stone-400"
                   >
                     <option>Médio (Concurso/OAB)</option>
-                    <option>Avançado</option>
-                    <option>Fixação</option>
+                    <option>Avançado (Magistratura/MP/Defensoria)</option>
+                    <option>Fixação (Tribunais/Policial)</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-stone-600 mb-1">
-                    Quantidade
+                    Quantidade de Questões
                   </label>
                   <select
                     value={simCount}
                     onChange={e => setSimCount(Number(e.target.value))}
-                    className="w-full p-2 rounded-xl bg-stone-50 border border-stone-200 text-xs text-stone-800"
+                    className="w-full p-2.5 rounded-xl bg-stone-50 border border-stone-200 text-xs text-stone-800 focus:outline-none focus:border-stone-400"
                   >
                     <option value={3}>3 questões</option>
                     <option value={5}>5 questões</option>
                     <option value={8}>8 questões</option>
+                    <option value={10}>10 questões (Recomendado)</option>
+                    <option value={12}>12 questões</option>
+                    <option value={15}>15 questões</option>
+                    <option value={20}>20 questões (Bateria completa)</option>
+                    <option value={25}>25 questões</option>
+                    <option value={30}>30 questões (Simulado completo)</option>
+                    <option value={40}>40 questões</option>
+                    <option value={50}>50 questões (Super maratona)</option>
                   </select>
                 </div>
               </div>
@@ -1230,9 +1607,23 @@ export default function App() {
               <button
                 onClick={handleGenerateSimulation}
                 disabled={simLoading}
-                className="w-full py-3 rounded-xl bg-stone-900 text-white text-sm font-medium hover:bg-stone-800 transition-colors disabled:opacity-50"
+                className="w-full py-3.5 rounded-xl bg-stone-900 text-white text-sm font-medium hover:bg-stone-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-xs"
               >
-                {simLoading ? 'Gerando questões com IA...' : 'Gerar Simulado'}
+                {simLoading ? (
+                  <>
+                    <span className="material-symbols-outlined text-[18px] animate-spin">refresh</span>
+                    <span>Gerando {simCount} questões inéditas com IA...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[18px]">play_circle</span>
+                    <span>
+                      {simStudyMode === 'multi'
+                        ? `Gerar Simulado Multitemático (${simCount} questões)`
+                        : `Gerar Simulado (${simCount} questões)`}
+                    </span>
+                  </>
+                )}
               </button>
             </div>
 
@@ -1240,24 +1631,92 @@ export default function App() {
               <div className="space-y-3">
                 {simQuizData.topicSummary && (
                   <div className="p-4 rounded-xl bg-stone-100 border border-stone-200 text-xs text-stone-700 leading-relaxed">
-                    <strong className="text-stone-900 block mb-1"> Síntese do Tema:</strong>
+                    <strong className="text-stone-900 block mb-1"> Síntese do Simulado:</strong>
                     {simQuizData.topicSummary}
                   </div>
                 )}
 
-                {(simQuizData.questions || []).map((q, qIdx) => {
+                {/* FILTROS DINÂMICOS DE BANCA E TEMA */}
+                <div className="space-y-2 bg-white p-3 rounded-xl border border-stone-200/90 shadow-xs">
+                  {availableSimBancas.length > 2 && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                      <span className="text-[11px] font-semibold text-stone-500 shrink-0">Filtrar Banca:</span>
+                      {availableSimBancas.map(b => {
+                        const count = b === 'Todas'
+                          ? (simQuizData.questions || []).length
+                          : (simQuizData.questions || []).filter(q => (q.banca || simBanca || '').trim() === b).length;
+                        const isActive = simQuestionsFilter === b;
+                        return (
+                          <button
+                            key={b}
+                            onClick={() => setSimQuestionsFilter(b)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                              isActive
+                                ? 'bg-stone-900 text-white'
+                                : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                            }`}
+                          >
+                            {b} ({count})
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {availableSimThemes.length > 2 && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 border-t border-stone-100 pt-1.5">
+                      <span className="text-[11px] font-semibold text-stone-500 shrink-0">Filtrar Tema:</span>
+                      {availableSimThemes.map(t => {
+                        const count = t === 'Todos'
+                          ? (simQuizData.questions || []).length
+                          : (simQuizData.questions || []).filter(q => (q.themeTitle || '').trim() === t).length;
+                        const isActive = simThemeFilter === t;
+                        return (
+                          <button
+                            key={t}
+                            onClick={() => setSimThemeFilter(t)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                              isActive
+                                ? 'bg-stone-900 text-white'
+                                : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                            }`}
+                          >
+                            {t} ({count})
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {filteredSimQuestions.map(q => {
+                  const qIdx = q.originalIdx;
                   const chosen = simAnswers[qIdx];
                   const isRevealed = simRevealed[qIdx];
+                  const isCorrectAns = chosen && q.answer?.trim().toUpperCase().startsWith(chosen);
+
                   return (
                     <div
                       key={q.id || qIdx}
-                      className="rounded-2xl bg-white border border-stone-200/90 p-5 space-y-3"
+                      className="rounded-2xl bg-white border border-stone-200/90 p-5 space-y-3 shadow-xs"
                     >
-                      <div className="flex items-center justify-between text-xs text-stone-500">
-                        <span className="font-semibold text-stone-800">
-                          Questão {qIdx + 1} • {q.banca || simBanca}
+                      <div className="flex flex-wrap items-center justify-between gap-1.5 text-xs text-stone-500 pb-2 border-b border-stone-100">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="font-semibold text-stone-900">
+                            Questão {qIdx + 1}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md bg-stone-100 text-stone-800 font-medium text-[11px]">
+                            {q.banca || simBanca}
+                          </span>
+                          {q.themeTitle && (
+                            <span className="px-2 py-0.5 rounded-md bg-stone-100 text-stone-700 text-[11px] truncate max-w-[220px]">
+                              {q.themeTitle}
+                            </span>
+                          )}
+                        </div>
+                        <span className="font-mono text-stone-600 text-[11px]">
+                          {q.articleRef || activeArticle.key}
                         </span>
-                        <span className="font-mono">{q.articleRef || activeArticle.key}</span>
                       </div>
 
                       <p className="font-body-legal text-sm text-stone-900 leading-relaxed">
@@ -1268,13 +1727,13 @@ export default function App() {
                         {(q.options || []).map((opt, oIdx) => {
                           const letter = opt.trim().charAt(0).toUpperCase();
                           const isThisChosen = chosen === letter;
-                          const isCorrectAns = q.answer?.trim().toUpperCase().startsWith(letter);
+                          const isRight = q.answer?.trim().toUpperCase().startsWith(letter);
 
                           let btnStyle = 'bg-stone-50 hover:bg-stone-100 text-stone-800 border-stone-200';
                           if (isRevealed) {
-                            if (isCorrectAns) {
+                            if (isRight) {
                               btnStyle = 'bg-emerald-50 text-emerald-950 border-emerald-300 font-medium';
-                            } else if (isThisChosen && !isCorrectAns) {
+                            } else if (isThisChosen && !isRight) {
                               btnStyle = 'bg-red-50 text-red-900 border-red-200';
                             }
                           }
@@ -1298,10 +1757,28 @@ export default function App() {
 
                       {isRevealed && (
                         <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200/80 text-xs space-y-1.5 text-stone-700">
-                          <p className="font-semibold text-stone-900">
-                            Gabarito: {q.answer} ({q.articleRef})
-                          </p>
+                          <div className="flex items-center justify-between">
+                            <p className="font-semibold text-stone-900">
+                              Gabarito: {q.answer} ({q.articleRef})
+                            </p>
+                            {isCorrectAns ? (
+                              <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                                Resposta Correta!
+                              </span>
+                            ) : (
+                              <span className="text-red-700 font-semibold flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[16px]">cancel</span>
+                                Incorreta
+                              </span>
+                            )}
+                          </div>
                           <p className="leading-relaxed">{q.explanation}</p>
+                          {q.distractorAnalysis && (
+                            <p className="text-[11px] text-stone-500 pt-1 border-t border-stone-200/50">
+                              {q.distractorAnalysis}
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1313,32 +1790,153 @@ export default function App() {
         )}
 
         {/* =========================================================
-            ABA 4: CADERNO E DESEMPENHO (Minimalista)
+            ABA 4: CADERNO, METAS & DESEMPENHO
            ========================================================= */}
         {activeTab === 'desempenho' && (
           <div className="space-y-4">
+            {/* ESTATÍSTICAS RESUMO */}
             <div className="grid grid-cols-3 gap-2.5">
-              <div className="rounded-xl bg-white border border-stone-200/90 p-4">
+              <div className="rounded-xl bg-white border border-stone-200/90 p-4 shadow-xs">
                 <span className="text-xs text-stone-500">Resolvidas</span>
                 <p className="text-xl font-semibold text-stone-900 mt-1">
                   {progress.stats?.questionsAnswered || 0}
                 </p>
               </div>
-              <div className="rounded-xl bg-white border border-stone-200/90 p-4">
+              <div className="rounded-xl bg-white border border-stone-200/90 p-4 shadow-xs">
                 <span className="text-xs text-stone-500">Aproveitamento</span>
                 <p className="text-xl font-semibold text-stone-900 mt-1">
                   {accuracyPercent}%
                 </p>
               </div>
-              <div className="rounded-xl bg-white border border-stone-200/90 p-4">
-                <span className="text-xs text-stone-500">Anotações</span>
+              <div className="rounded-xl bg-white border border-stone-200/90 p-4 shadow-xs">
+                <span className="text-xs text-stone-500">Metas Concluídas</span>
                 <p className="text-xl font-semibold text-stone-900 mt-1">
-                  {progress.notes?.length || 0}
+                  {(progress.studyGoals || []).filter(g => (g.answeredCount || 0) >= (g.goalCount || 30)).length} / {(progress.studyGoals || []).length}
                 </p>
               </div>
             </div>
 
-            <div className="rounded-2xl bg-white border border-stone-200/90 p-5 space-y-3">
+            {/* SEÇÃO PRINCIPAL: TEMAS SIMULTÂNEOS & METAS DE ESTUDO */}
+            <div className="rounded-2xl bg-white border border-stone-200/90 p-5 space-y-4 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-100 pb-3">
+                <div>
+                  <h2 className="text-base font-semibold text-stone-900 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[20px] text-stone-700">flag</span>
+                    Metas de Estudo por Tema (Ciclos Simultâneos)
+                  </h2>
+                  <p className="text-xs text-stone-500">
+                    Defina metas de questões para cada tema e pratique no simulador multitemático
+                  </p>
+                </div>
+                <button
+                  onClick={handleOpenNewGoalModal}
+                  className="px-3.5 py-2 rounded-xl bg-stone-900 text-white text-xs font-medium hover:bg-stone-800 transition-colors flex items-center gap-1.5 self-start sm:self-auto shadow-xs"
+                >
+                  <span className="material-symbols-outlined text-[16px]">add</span>
+                  Adicionar Tema & Meta
+                </button>
+              </div>
+
+              {/* LISTA DE METAS / TEMAS */}
+              <div className="space-y-3">
+                {(progress.studyGoals || DEFAULT_STUDY_GOALS).map(goal => {
+                  const answered = goal.answeredCount || 0;
+                  const total = goal.goalCount || 30;
+                  const percent = Math.min(100, Math.round((answered / total) * 100));
+                  const isFinished = answered >= total;
+                  const goalAccuracy = answered > 0
+                    ? Math.round(((goal.correctCount || 0) / answered) * 100)
+                    : null;
+
+                  return (
+                    <div
+                      key={goal.id}
+                      className="p-4 rounded-xl bg-stone-50/70 border border-stone-200/90 space-y-2.5 transition-all hover:bg-stone-50"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-semibold text-stone-900">
+                              {goal.title}
+                            </h3>
+                            <span className="px-2 py-0.5 rounded-md bg-stone-200 text-stone-700 font-mono text-[10px]">
+                              {goal.lawTitle || 'Lei'}
+                            </span>
+                            {isFinished && (
+                              <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-semibold flex items-center gap-0.5">
+                                <span className="material-symbols-outlined text-[12px]">verified</span>
+                                Meta Atingida!
+                              </span>
+                            )}
+                          </div>
+                          {goal.focusTopic && (
+                            <p className="text-xs text-stone-500 mt-0.5">
+                              {goal.focusTopic}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleStartSimFromGoal(goal)}
+                            className="px-2.5 py-1.5 rounded-lg bg-stone-900 text-white text-xs font-medium hover:bg-stone-800 transition-colors flex items-center gap-1 shadow-xs"
+                            title="Praticar este tema no simulador"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">play_arrow</span>
+                            Simular
+                          </button>
+                          <button
+                            onClick={() => handleIncrementGoalProgress(goal.id)}
+                            className="px-2.5 py-1.5 rounded-lg bg-white border border-stone-300 text-stone-700 text-xs font-medium hover:bg-stone-100 transition-colors"
+                            title="Adicionar 1 questão resolvida"
+                          >
+                            +1
+                          </button>
+                          <button
+                            onClick={() => handleOpenEditGoalModal(goal)}
+                            className="p-1.5 rounded-lg text-stone-500 hover:text-stone-900 hover:bg-stone-200/60"
+                            title="Editar meta"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">edit</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteGoal(goal.id)}
+                            className="p-1.5 rounded-lg text-stone-400 hover:text-red-700 hover:bg-red-50"
+                            title="Excluir tema"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">delete</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* BARRA DE PROGRESSO DA META */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-xs text-stone-600">
+                          <span className="font-medium">
+                            {answered} de {total} questões resolvidas ({percent}%)
+                          </span>
+                          <span className="text-[11px] text-stone-500">
+                            {goalAccuracy !== null ? `${goalAccuracy}% de acertos` : 'Nenhuma questão ainda'}
+                            {goal.dailyGoal ? ` • Meta diária: ${goal.dailyGoal}` : ''}
+                          </span>
+                        </div>
+                        <div className="w-full bg-stone-200 h-2 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              isFinished ? 'bg-emerald-600' : 'bg-stone-900'
+                            }`}
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* SEÇÃO DE ANOTAÇÕES */}
+            <div className="rounded-2xl bg-white border border-stone-200/90 p-5 space-y-3 shadow-xs">
               <h2 className="text-sm font-semibold text-stone-900">
                 Nova Anotação ({currentLaw?.shortTitle || 'CF/88'} • {activeArticle.key})
               </h2>
@@ -1373,19 +1971,25 @@ export default function App() {
               )}
             </div>
 
+            {/* SEÇÃO DE QUESTÕES PARA REVISAR */}
             {progress.savedQuestions?.length > 0 && (
-              <div className="rounded-2xl bg-white border border-stone-200/90 p-5 space-y-3">
+              <div className="rounded-2xl bg-white border border-stone-200/90 p-5 space-y-3 shadow-xs">
                 <h2 className="text-sm font-semibold text-stone-900">
-                  Questões para Revisar ({progress.savedQuestions.length})
+                  Caderno de Erros & Revisão ({progress.savedQuestions.length})
                 </h2>
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
                   {progress.savedQuestions.map((sq, idx) => (
                     <div key={sq.id || idx} className="p-3 rounded-xl bg-stone-50 border border-stone-200/60 space-y-1 text-xs">
-                      <span className="font-mono font-semibold text-stone-700">
-                        {sq.lawTitle} • {sq.articleRef}
-                      </span>
-                      <p className="text-stone-800">{sq.statement}</p>
-                      <p className="text-stone-500">
+                      <div className="flex items-center justify-between text-stone-500 text-[11px]">
+                        <span className="font-mono font-semibold text-stone-800">
+                          {sq.lawTitle} • {sq.articleRef}
+                          {sq.banca ? ` • ${sq.banca}` : ''}
+                          {sq.themeTitle ? ` • ${sq.themeTitle}` : ''}
+                        </span>
+                        <span>{sq.date}</span>
+                      </div>
+                      <p className="text-stone-800 font-medium">{sq.statement}</p>
+                      <p className="text-stone-600">
                         <strong>Gabarito {sq.answer}:</strong> {sq.explanation}
                       </p>
                     </div>
@@ -1582,6 +2186,174 @@ export default function App() {
                     </a>
                   </div>
                 )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* MODAL ADICIONAR / EDITAR TEMA E META */}
+        {showGoalModal && (
+          <>
+            <div
+              onClick={() => setShowGoalModal(false)}
+              className="fixed inset-0 bg-black/40 z-50 backdrop-blur-xs transition-opacity"
+            />
+            <div className="fixed inset-x-4 top-[10%] sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-[500px] bg-white rounded-2xl border border-stone-200 shadow-2xl z-50 p-6 space-y-4 max-h-[85vh] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+                <h3 className="text-base font-semibold text-stone-900 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[20px] text-stone-700">flag</span>
+                  {editingGoal ? 'Editar Tema e Meta de Estudo' : 'Novo Tema Simultâneo & Meta'}
+                </h3>
+                <button
+                  onClick={() => setShowGoalModal(false)}
+                  className="w-7 h-7 rounded-lg bg-stone-100 flex items-center justify-center text-stone-500 hover:bg-stone-200"
+                >
+                  <span className="material-symbols-outlined text-[18px]">close</span>
+                </button>
+              </div>
+
+              {/* TEMA SUGERIDO / RÁPIDO */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-stone-700">
+                  Sugestões Rápidas de Temas:
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { t: 'Direitos Fundamentais (Art. 5º)', l: 'cf88' },
+                    { t: 'Administração Pública (Arts. 37-41)', l: 'cf88' },
+                    { t: 'Nova Lei de Licitações (Lei 14.133)', l: 'lei-licitacoes-14133' },
+                    { t: 'Direito Penal - Teoria do Crime', l: 'cod-penal' },
+                    { t: 'Processo Civil - Recursos', l: 'cpc-2015' },
+                    { t: 'Direito Tributário - Impostos', l: 'ctn' }
+                  ].map(sug => (
+                    <button
+                      key={sug.t}
+                      type="button"
+                      onClick={() => {
+                        setGoalFormTitle(sug.t);
+                        setGoalFormLawId(sug.l);
+                      }}
+                      className="px-2.5 py-1 rounded-lg text-xs bg-stone-100 text-stone-700 hover:bg-stone-200 transition-colors"
+                    >
+                      {sug.t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-stone-700">
+                  Título do Tema de Estudo *
+                </label>
+                <input
+                  type="text"
+                  value={goalFormTitle}
+                  onChange={e => setGoalFormTitle(e.target.value)}
+                  placeholder="Ex: Direitos Sociais, Licitações, Controle de Const..."
+                  className="w-full px-3 py-2 rounded-xl bg-stone-50 border border-stone-200 text-sm text-stone-900 focus:outline-none focus:border-stone-400"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-stone-700">
+                  Lei ou Código Vinculado
+                </label>
+                <select
+                  value={goalFormLawId}
+                  onChange={e => setGoalFormLawId(e.target.value)}
+                  className="w-full p-2.5 rounded-xl bg-stone-50 border border-stone-200 text-xs text-stone-800 focus:outline-none focus:border-stone-400"
+                >
+                  {catalog.map(l => (
+                    <option key={l.id} value={l.id}>
+                      {l.shortTitle || l.shortName} — {l.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-stone-700">
+                  Foco Específico (Opcional)
+                </label>
+                <input
+                  type="text"
+                  value={goalFormFocus}
+                  onChange={e => setGoalFormFocus(e.target.value)}
+                  placeholder="Ex: Jurisprudência do STF, Prazos recursais, Exceções à regra..."
+                  className="w-full px-3 py-2 rounded-xl bg-stone-50 border border-stone-200 text-sm text-stone-900 focus:outline-none focus:border-stone-400"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-stone-700">
+                    Meta Total de Questões
+                  </label>
+                  <input
+                    type="number"
+                    min={5}
+                    max={500}
+                    value={goalFormTotal}
+                    onChange={e => setGoalFormTotal(Math.max(1, Number(e.target.value)))}
+                    className="w-full px-3 py-2 rounded-xl bg-stone-50 border border-stone-200 text-sm text-stone-900 focus:outline-none focus:border-stone-400"
+                  />
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {[15, 30, 50, 100].map(cnt => (
+                      <button
+                        key={cnt}
+                        type="button"
+                        onClick={() => setGoalFormTotal(cnt)}
+                        className="px-2 py-0.5 rounded text-[11px] bg-stone-100 text-stone-600 hover:bg-stone-200"
+                      >
+                        {cnt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-stone-700">
+                    Meta Diária (Questões/dia)
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={goalFormDaily}
+                    onChange={e => setGoalFormDaily(Math.max(1, Number(e.target.value)))}
+                    className="w-full px-3 py-2 rounded-xl bg-stone-50 border border-stone-200 text-sm text-stone-900 focus:outline-none focus:border-stone-400"
+                  />
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {[5, 10, 15, 20].map(cnt => (
+                      <button
+                        key={cnt}
+                        type="button"
+                        onClick={() => setGoalFormDaily(cnt)}
+                        className="px-2 py-0.5 rounded text-[11px] bg-stone-100 text-stone-600 hover:bg-stone-200"
+                      >
+                        {cnt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-stone-100">
+                <button
+                  type="button"
+                  onClick={() => setShowGoalModal(false)}
+                  className="px-4 py-2 rounded-xl border border-stone-300 text-xs font-medium text-stone-700 hover:bg-stone-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveGoal}
+                  disabled={!goalFormTitle.trim()}
+                  className="px-4 py-2 rounded-xl bg-stone-900 text-white text-xs font-medium hover:bg-stone-800 disabled:opacity-50"
+                >
+                  {editingGoal ? 'Salvar Alterações' : 'Criar Meta de Estudo'}
+                </button>
               </div>
             </div>
           </>

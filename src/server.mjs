@@ -591,7 +591,7 @@ Elabore uma AULA COMPLETA E ESQUEMATIZADA em Markdown contendo:
         ? String(customExcerpt).slice(0, 12000)
         : extractRelevantLawExcerpt(fullLawText, topic || lawMeta.title, 13000);
 
-      const numQuestions = Math.min(Math.max(parseInt(count, 10) || 5, 1), 10);
+      const numQuestions = Math.min(Math.max(parseInt(count, 10) || 5, 1), 50);
 
       const systemPrompt = `Você é um Examinador Sênior de Bancas de Concursos Públicos Brasileiros (Cebraspe, FGV, FCC, Vunesp).
 Você cria questões jurídicas inéditas de altíssima qualidade baseadas EXCLUSIVAMENTE no texto legal fornecido.
