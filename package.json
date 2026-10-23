@@ -1,9 +1,18 @@
 {
-  "name": "leisbr-estudo-app",
-  "version": "1.0.0",
-  "description": "Plataforma de Estudos Jurídicos & Concursos com IA baseada no acervo Legislação Brasileira em Markdown (leis) — Otimizada para Redmi Pad Pro (Sem Login)",
+  "name": "lexia-juris",
+  "version": "1.2.0",
+  "description": "Plataforma de Estudos Jurídicos & Concursos com IA baseada no acervo Legislação Brasileira em Markdown",
   "type": "module",
   "scripts": {
-    "start": "node src/server.mjs"
+    "start": "node backend/src/server.mjs",
+    "backend": "node backend/src/server.mjs",
+    "backend:dev": "node --watch backend/src/server.mjs",
+    "frontend:dev": "npm --prefix frontend run dev",
+    "frontend:build": "npm --prefix frontend run build"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0"
   }
 }

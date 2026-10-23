@@ -1,0 +1,48 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: lexia-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_ORIGINS=*
+    # Suporte a GPU NVIDIA na VPS (descomente caso possua placa de vídeo dedicada):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lexia-backend
+    restart: unless-stopped
+    ports:
+      - "3460:3460"
+    depends_on:
+      - ollama
+    environment:
+      - PORT=3460
+      - NODE_ENV=production
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=qwen2.5:7b
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+    volumes:
+      - lexia_data:/app/data
+      - lexia_leis:/app/leis
+
+volumes:
+  ollama_data:
+    name: lexia_ollama_data
+  lexia_data:
+    name: lexia_app_data
+  lexia_leis:
+    name: lexia_leis_data

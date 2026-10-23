@@ -9,6 +9,16 @@ function getStandaloneKey() {
   return localStorage.getItem('lexia_custom_groq_key') || String.fromCharCode(..._K_CODES);
 }
 
+function getApiEndpoint(path) {
+  try {
+    const customVps = localStorage.getItem('lexia_vps_api_url');
+    if (customVps && customVps.trim()) {
+      return `${customVps.trim().replace(/\/$/, '')}${path}`;
+    }
+  } catch {}
+  return path;
+}
+
 const STANDALONE_CATALOG = [
   {
     id: 'cf88',
@@ -378,6 +388,55 @@ export default function App() {
   const [goalFormTotal, setGoalFormTotal] = useState(30);
   const [goalFormDaily, setGoalFormDaily] = useState(10);
 
+  // SERVIDOR VPS & LLM LOCAL (OLLAMA)
+  const [vpsUrl, setVpsUrl] = useState(() => {
+    try {
+      return localStorage.getItem('lexia_vps_api_url') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [vpsTestStatus, setVpsTestStatus] = useState(null); // null | 'testing' | 'success' | 'error'
+  const [vpsStatusData, setVpsStatusData] = useState(null);
+
+  const handleTestVpsConnection = async () => {
+    const rawUrl = vpsUrl.trim().replace(/\/$/, '');
+    if (!rawUrl) {
+      setVpsTestStatus('error');
+      setVpsStatusData({ message: 'Digite a URL da VPS (ex: http://192.168.1.102:3460 ou http://IP_DA_VPS:3460)' });
+      return;
+    }
+    setVpsTestStatus('testing');
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 6000);
+      const res = await fetch(`${rawUrl}/api/status`, { signal: controller.signal });
+      clearTimeout(timeout);
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem('lexia_vps_api_url', rawUrl);
+        setVpsTestStatus('success');
+        setVpsStatusData(data);
+        fetch(`${rawUrl}/api/catalog`).then(r => r.ok && r.json()).then(cat => {
+          if (cat?.laws?.length) setCatalog(cat.laws);
+        }).catch(() => {});
+      } else {
+        setVpsTestStatus('error');
+        setVpsStatusData({ message: `Servidor retornou HTTP ${res.status}` });
+      }
+    } catch (e) {
+      setVpsTestStatus('error');
+      setVpsStatusData({ message: 'Não foi possível conectar. Verifique o IP, a porta 3460 e a conexão à internet.' });
+    }
+  };
+
+  const handleClearVps = () => {
+    localStorage.removeItem('lexia_vps_api_url');
+    setVpsUrl('');
+    setVpsTestStatus(null);
+    setVpsStatusData(null);
+  };
+
   const [progress, setProgress] = useState(() => {
     try {
       const saved = localStorage.getItem('lexia_juris_progress');
@@ -399,7 +458,7 @@ export default function App() {
   const [newNoteText, setNewNoteText] = useState('');
 
   useEffect(() => {
-    fetch('/api/catalog')
+    fetch(getApiEndpoint('/api/catalog'))
       .then(r => (r.ok ? r.json() : Promise.reject()))
       .then(data => {
         if (data.laws?.length) setCatalog(data.laws);
@@ -407,7 +466,7 @@ export default function App() {
       })
       .catch(() => {});
 
-    fetch('/api/progress')
+    fetch(getApiEndpoint('/api/progress'))
       .then(r => (r.ok ? r.json() : Promise.reject()))
       .then(data => {
         if (data && data.stats) {
@@ -448,7 +507,7 @@ export default function App() {
         }
 
         try {
-          const localRes = await fetch(`/api/law/${lawId}`);
+          const localRes = await fetch(getApiEndpoint(`/api/law/${lawId}`));
           if (localRes.ok) {
             const data = await localRes.json();
             if (data?.content) {
@@ -569,7 +628,7 @@ export default function App() {
     try {
       let explanationText = null;
       try {
-        const res = await fetch('/api/ai/explain', {
+        const res = await fetch(getApiEndpoint('/api/ai/explain'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -616,7 +675,7 @@ export default function App() {
     try {
       let questionObj = null;
       try {
-        const res = await fetch('/api/ai/questions', {
+        const res = await fetch(getApiEndpoint('/api/ai/questions'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -765,7 +824,7 @@ export default function App() {
     try {
       let quizPayload = null;
       try {
-        const res = await fetch('/api/ai/questions', {
+        const res = await fetch(getApiEndpoint('/api/ai/questions'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -905,7 +964,7 @@ IMPORTANTE: Para cada questão, preencha o campo "themeTitle" com o nome exato d
     persistProgress(nextProg);
 
     try {
-      await fetch('/api/progress', {
+      await fetch(getApiEndpoint('/api/progress'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -934,7 +993,7 @@ IMPORTANTE: Para cada questão, preencha o campo "themeTitle" com o nome exato d
     setNewNoteText('');
 
     try {
-      await fetch('/api/progress', {
+      await fetch(getApiEndpoint('/api/progress'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ note: noteObj })
@@ -2152,7 +2211,64 @@ IMPORTANTE: Para cada questão, preencha o campo "themeTitle" com o nome exato d
                 )}
 
                 {drawerMode === 'apk' && (
-                  <div className="space-y-3 text-xs">
+                  <div className="space-y-4 text-xs">
+                    {/* Bloco Conexão VPS & LLM Local (Ollama) */}
+                    <div className="p-4 rounded-xl bg-stone-50 border border-stone-200 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 font-semibold text-stone-900">
+                          <span className="material-symbols-outlined text-[18px] text-stone-700">dns</span>
+                          <span>Servidor VPS & LLM Local (Ollama)</span>
+                        </div>
+                        {vpsTestStatus === 'success' && (
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-medium flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" /> Conectado
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-stone-600 text-[11px] leading-relaxed">
+                        Conecte seu tablet à VPS para usar o modelo local <strong>Qwen 2.5 (7B)</strong> via Ollama de qualquer lugar (4G/5G/Wi-Fi fora de casa).
+                      </p>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={vpsUrl}
+                          onChange={(e) => { setVpsUrl(e.target.value); setVpsTestStatus(null); }}
+                          placeholder="Ex: http://IP_DA_VPS:3460 ou http://192.168.1.100:3460"
+                          className="flex-1 px-3 py-2 bg-white border border-stone-200 rounded-lg text-xs font-mono text-stone-800 placeholder-stone-400 focus:outline-none focus:border-stone-400"
+                        />
+                        <button
+                          onClick={handleTestVpsConnection}
+                          disabled={vpsTestStatus === 'testing'}
+                          className="px-3.5 py-2 bg-stone-900 text-white rounded-lg font-medium hover:bg-stone-800 transition-colors disabled:opacity-50 text-xs flex items-center gap-1 shrink-0"
+                        >
+                          {vpsTestStatus === 'testing' ? 'Testando...' : 'Conectar'}
+                        </button>
+                        {vpsUrl && (
+                          <button
+                            onClick={handleClearVps}
+                            title="Limpar e usar modo local autônomo"
+                            className="px-2.5 py-2 bg-stone-200 text-stone-700 rounded-lg hover:bg-stone-300 transition-colors text-xs shrink-0"
+                          >
+                            Limpar
+                          </button>
+                        )}
+                      </div>
+
+                      {vpsTestStatus === 'success' && vpsStatusData && (
+                        <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-[11px] space-y-0.5">
+                          <p className="font-semibold">Conexão com a VPS ativa!</p>
+                          <p className="text-emerald-700">Motor: <strong>{vpsStatusData.ollama?.model || 'qwen2.5:7b'}</strong> • Acervo: {vpsStatusData.acervo?.totalLeis || 24} leis</p>
+                        </div>
+                      )}
+
+                      {vpsTestStatus === 'error' && vpsStatusData && (
+                        <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-900 text-[11px]">
+                          {vpsStatusData.message}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Status da Sincronização */}
                     <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200 text-stone-700">
                       <p className="font-semibold text-stone-900 mb-1">Status: {syncStatus}</p>
                       <p>
