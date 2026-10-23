@@ -1,0 +1,18 @@
+{
+  "name": "LexIA Juris — Vade Mecum & Estudo IA",
+  "short_name": "LexIA Juris",
+  "description": "Plataforma Editorial de Estudos Jurídicos e Legislação Brasileira com IA (Sem Login)",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f9fb",
+  "theme_color": "#f7f9fb",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

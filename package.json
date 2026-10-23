@@ -1,0 +1,9 @@
+{
+  "name": "leisbr-estudo-app",
+  "version": "1.0.0",
+  "description": "Plataforma de Estudos Jurídicos & Concursos com IA baseada no acervo Legislação Brasileira em Markdown (leis) — Otimizada para Redmi Pad Pro (Sem Login)",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.mjs"
+  }
+}

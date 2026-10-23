@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="shell-type" content="mobile_tab" />
+    <meta name="theme-color" content="#f7f9fb" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <title>LexIA Juris — Vade Mecum & Estudo Jurídico com IA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+    <link href="https://fonts.googleapis.com/css2?family=Domine:wght@400..700&family=JetBrains+Mono:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
+    <style>
+      @layer base {
+        html, body { width: 100vw; margin: 0; padding: 0; }
+        body { overscroll-behavior: none; background-color: #f7f9fb; color: #191c1e; -webkit-tap-highlight-color: transparent; }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+        .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+      }
+      ::-webkit-scrollbar { display: none; }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-surface": "#191c1e",
+              "inverse-on-surface": "#eff1f3",
+              "on-background": "#191c1e",
+              "outline": "#76777d",
+              "surface-container-highest": "#e0e3e5",
+              "on-primary": "#ffffff",
+              "surface-container-low": "#f2f4f6",
+              "on-tertiary": "#ffffff",
+              "secondary-fixed-dim": "#ffb77d",
+              "primary-fixed-dim": "#bec6e0",
+              "outline-variant": "#c6c6cd",
+              "surface": "#f7f9fb",
+              "on-secondary-fixed-variant": "#6e3900",
+              "on-error-container": "#93000a",
+              "on-tertiary-fixed-variant": "#005236",
+              "error": "#ba1a1a",
+              "secondary": "#904d00",
+              "on-secondary-container": "#663500",
+              "on-error": "#ffffff",
+              "tertiary-fixed": "#6ffbbe",
+              "primary-container": "#131b2e",
+              "background": "#f7f9fb",
+              "secondary-container": "#fe932c",
+              "error-container": "#ffdad6",
+              "tertiary-fixed-dim": "#4edea3",
+              "surface-container": "#eceef0",
+              "on-tertiary-fixed": "#002113",
+              "inverse-surface": "#2d3133",
+              "on-primary-container": "#7c839b",
+              "tertiary": "#000000",
+              "surface-variant": "#e0e3e5",
+              "tertiary-container": "#002113",
+              "surface-bright": "#f7f9fb",
+              "primary-fixed": "#dae2fd",
+              "on-secondary": "#ffffff",
+              "surface-container-lowest": "#ffffff",
+              "surface-container-high": "#e6e8ea",
+              "surface-dim": "#d8dadc",
+              "on-primary-fixed": "#131b2e",
+              "on-tertiary-container": "#009668",
+              "secondary-fixed": "#ffdcc3",
+              "on-primary-fixed-variant": "#3f465c",
+              "surface-tint": "#565e74",
+              "on-surface-variant": "#45464d",
+              "on-secondary-fixed": "#2f1500",
+              "primary": "#000000",
+              "inverse-primary": "#bec6e0"
+            },
+            borderRadius: {
+              "DEFAULT": "0.125rem",
+              "lg": "0.25rem",
+              "xl": "0.5rem",
+              "full": "0.75rem"
+            },
+            spacing: {
+              "margin": "1rem",
+              "space-md": "1rem",
+              "margin-tablet": "2rem",
+              "gutter-desktop": "1.5rem",
+              "margin-desktop": "4rem",
+              "space-xs": "0.25rem",
+              "space-xl": "2.5rem",
+              "space-sm": "0.5rem",
+              "space-lg": "1.5rem",
+              "gutter": "1rem"
+            },
+            fontFamily: {
+              "headline-lg-mobile": ["Domine"],
+              "headline-lg": ["Domine"],
+              "body-regular": ["\"Source Sans 3\""],
+              "headline-xl": ["Domine"],
+              "label-tag": ["\"Source Sans 3\""],
+              "headline-xl-mobile": ["Domine"],
+              "title-lg": ["\"Source Sans 3\""],
+              "body-legal": ["Domine"],
+              "label-mono": ["JetBrains Mono"],
+              "title-md": ["\"Source Sans 3\""],
+              "body-sm": ["\"Source Sans 3\""],
+              "headline-md": ["Domine"]
+            },
+            fontSize: {
+              "headline-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "600" }],
+              "headline-lg": ["30px", { lineHeight: "38px", fontWeight: "600" }],
+              "body-regular": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+              "headline-xl": ["36px", { lineHeight: "44px", fontWeight: "700" }],
+              "label-tag": ["12px", { lineHeight: "16px", letterSpacing: "0.4px", fontWeight: "600" }],
+              "headline-xl-mobile": ["28px", { lineHeight: "36px", fontWeight: "700" }],
+              "title-lg": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+              "body-legal": ["17px", { lineHeight: "28px", letterSpacing: "0.15px", fontWeight: "400" }],
+              "label-mono": ["12px", { lineHeight: "16px", letterSpacing: "0.5px", fontWeight: "500" }],
+              "title-md": ["18px", { lineHeight: "26px", fontWeight: "600" }],
+              "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+              "headline-md": ["22px", { lineHeight: "30px", fontWeight: "600" }]
+            }
+          }
+        }
+      };
+    </script>
+  </head>
+  <body class="bg-surface font-body-regular text-body-regular text-on-surface flex flex-col min-h-screen">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
