@@ -23,7 +23,8 @@ Write-Host "=== 3. Compilando Java com javac ===" -ForegroundColor Cyan
 & javac -source 8 -target 8 -d "$BUILD_DIR\classes" -cp "$ANDROID_JAR" "$APK_DIR\src\br\leis\estudo\MainActivity.java"
 
 Write-Host "=== 4. Gerando classes.dex com D8 ===" -ForegroundColor Cyan
-& "$BUILD_TOOLS\d8.bat" --release --min-api 24 --output "$BUILD_DIR" "$BUILD_DIR\classes\br\leis\estudo\MainActivity.class" "$BUILD_DIR\classes\br\leis\estudo\MainActivity`$1.class" "$BUILD_DIR\classes\br\leis\estudo\MainActivity`$2.class"
+$classFiles = Get-ChildItem -Path "$BUILD_DIR\classes" -Recurse -Filter "*.class" | ForEach-Object { $_.FullName }
+& "$BUILD_TOOLS\d8.bat" --release --min-api 21 --lib "$ANDROID_JAR" --output "$BUILD_DIR" $classFiles
 
 Write-Host "=== 5. Empacotando com AAPT (Manifest + Resources + Assets) ===" -ForegroundColor Cyan
 & "$BUILD_TOOLS\aapt.exe" package -f -m `
@@ -48,6 +49,7 @@ Write-Host "=== 8. Assinando com apksigner (v1, v2, v3) ===" -ForegroundColor Cy
     --ks-pass pass:android `
     --key-pass pass:android `
     --ks-key-alias androiddebugkey `
+    --min-sdk-version 21 `
     --v1-signing-enabled true `
     --v2-signing-enabled true `
     --v3-signing-enabled true `
