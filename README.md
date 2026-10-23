@@ -1,6 +1,6 @@
 # ⚖️ LexIA Juris — Vade Mecum & Plataforma de Estudos Jurídicos com IA
 
-[![Release](https://img.shields.io/badge/Release-v1.2.0-blue.svg)](https://github.com/alissoncostareal/lexia-juris/releases/tag/v1.2.0)
+[![Release](https://img.shields.io/badge/Release-v1.2.1-blue.svg)](https://github.com/alissoncostareal/lexia-juris/releases/tag/v1.2.1)
 [![Android APK](https://img.shields.io/badge/Android-APK%20Download-brightgreen.svg)](https://github.com/alissoncostareal/lexia-juris/raw/main/public/leisbr-estudo.apk)
 [![Web Platform](https://img.shields.io/badge/Web-GitHub%20Pages-orange.svg)](https://alissoncostareal.github.io/lexia-juris/)
 [![LLM Local](https://img.shields.io/badge/Ollama-Qwen%202.5%20(7B)-purple.svg)](https://ollama.ai)
@@ -11,9 +11,13 @@ Plataforma editorial limpa e neutra de estudos jurídicos e legislação brasile
 
 ## 📲 Links Rápidos de Download e Acesso
 
-- 📥 **[Baixar APK Android Atualizado (`leisbr-estudo.apk`)](https://github.com/alissoncostareal/lexia-juris/raw/main/public/leisbr-estudo.apk)** *(Pronto para instalar no tablet ou celular)*
-- 🏷️ **[Página da Release v1.2.0 no GitHub](https://github.com/alissoncostareal/lexia-juris/releases/tag/v1.2.0)**
+- 📥 **[Baixar APK Android Atualizado (`leisbr-estudo.apk`)](https://github.com/alissoncostareal/lexia-juris/raw/main/public/leisbr-estudo.apk)** *(Versão 1.2.1 assinada com esquemas v1, v2 e v3)*
+- 🏷️ **[Página da Release v1.2.1 no GitHub](https://github.com/alissoncostareal/lexia-juris/releases/tag/v1.2.1)**
 - 🌐 **[Abrir Versão Web Direto no Navegador (PWA / GitHub Pages)](https://alissoncostareal.github.io/lexia-juris/)**
+
+> 💡 **Dica de Instalação no Android / Xiaomi HyperOS:**  
+> Se o instalador exibir a mensagem *"Atualizando..."* e em seguida *"App não instalado"*, significa que havia uma versão preliminar ou teste anterior instalado no aparelho com assinatura diferente.  
+> **Basta desinstalar a versão anterior do tablet/celular antes de abrir o novo APK baixado.** O Android instalará normalmente com sucesso.
 
 ---
 
