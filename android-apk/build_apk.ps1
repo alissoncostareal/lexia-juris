@@ -25,10 +25,11 @@ Write-Host "=== 3. Compilando Java com javac ===" -ForegroundColor Cyan
 Write-Host "=== 4. Gerando classes.dex com D8 ===" -ForegroundColor Cyan
 & "$BUILD_TOOLS\d8.bat" --release --min-api 24 --output "$BUILD_DIR" "$BUILD_DIR\classes\br\leis\estudo\MainActivity.class" "$BUILD_DIR\classes\br\leis\estudo\MainActivity`$1.class" "$BUILD_DIR\classes\br\leis\estudo\MainActivity`$2.class"
 
-Write-Host "=== 5. Empacotando com AAPT (Manifest + Assets) ===" -ForegroundColor Cyan
+Write-Host "=== 5. Empacotando com AAPT (Manifest + Resources + Assets) ===" -ForegroundColor Cyan
 & "$BUILD_TOOLS\aapt.exe" package -f -m `
     -J "$BUILD_DIR\gen" `
     -M "$APK_DIR\AndroidManifest.xml" `
+    -S "$APK_DIR\res" `
     -I "$ANDROID_JAR" `
     -A "$ASSETS_DIR" `
     -F "$BUILD_DIR\unaligned.apk"
@@ -41,12 +42,15 @@ Pop-Location
 Write-Host "=== 7. Alinhando APK com zipalign 4 ===" -ForegroundColor Cyan
 & "$BUILD_TOOLS\zipalign.exe" -p -f 4 "$BUILD_DIR\unaligned.apk" "$BUILD_DIR\aligned.apk"
 
-Write-Host "=== 8. Assinando com apksigner (v1, v2, v3, v4) ===" -ForegroundColor Cyan
+Write-Host "=== 8. Assinando com apksigner (v1, v2, v3) ===" -ForegroundColor Cyan
 & "$BUILD_TOOLS\apksigner.bat" sign `
     --ks "$APK_DIR\debug.keystore" `
     --ks-pass pass:android `
     --key-pass pass:android `
     --ks-key-alias androiddebugkey `
+    --v1-signing-enabled true `
+    --v2-signing-enabled true `
+    --v3-signing-enabled true `
     --out "$BUILD_DIR\leisbr-estudo-signed.apk" `
     "$BUILD_DIR\aligned.apk"
 
