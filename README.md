@@ -1,6 +1,6 @@
 # ⚖️ LexIA Juris — Vade Mecum & Plataforma de Estudos Jurídicos com IA
 
-[![Release](https://img.shields.io/badge/Release-v1.2.1-blue.svg)](https://github.com/alissoncostareal/lexia-juris/releases/tag/v1.2.1)
+[![Release](https://img.shields.io/badge/Release-v1.2.2-blue.svg)](https://github.com/alissoncostareal/lexia-juris/releases/tag/v1.2.2)
 [![Android APK](https://img.shields.io/badge/Android-APK%20Download-brightgreen.svg)](https://github.com/alissoncostareal/lexia-juris/raw/main/public/leisbr-estudo.apk)
 [![Web Platform](https://img.shields.io/badge/Web-GitHub%20Pages-orange.svg)](https://alissoncostareal.github.io/lexia-juris/)
 [![LLM Local](https://img.shields.io/badge/Ollama-Qwen%202.5%20(7B)-purple.svg)](https://ollama.ai)
@@ -11,8 +11,8 @@ Plataforma editorial limpa e neutra de estudos jurídicos e legislação brasile
 
 ## 📲 Links Rápidos de Download e Acesso
 
-- 📥 **[Baixar APK Android Atualizado (`leisbr-estudo.apk`)](https://github.com/alissoncostareal/lexia-juris/raw/main/public/leisbr-estudo.apk)** *(Versão 1.2.1 assinada com esquemas v1, v2 e v3)*
-- 🏷️ **[Página da Release v1.2.1 no GitHub](https://github.com/alissoncostareal/lexia-juris/releases/tag/v1.2.1)**
+- 📥 **[Baixar APK Android Atualizado (`leisbr-estudo.apk`)](https://github.com/alissoncostareal/lexia-juris/raw/main/public/leisbr-estudo.apk)** *(Versão 1.2.2 assinada com esquemas v1, v2 e v3, 100% autossuficiente e offline)*
+- 🏷️ **[Página da Release v1.2.2 no GitHub](https://github.com/alissoncostareal/lexia-juris/releases/tag/v1.2.2)**
 - 🌐 **[Abrir Versão Web Direto no Navegador (PWA / GitHub Pages)](https://alissoncostareal.github.io/lexia-juris/)**
 
 > 💡 **Dica de Instalação no Android / Xiaomi HyperOS:**  

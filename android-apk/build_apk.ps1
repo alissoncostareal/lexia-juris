@@ -7,17 +7,20 @@ $APK_DIR = "$ROOT\android-apk"
 $BUILD_DIR = "$APK_DIR\build"
 $ASSETS_DIR = "$APK_DIR\assets"
 
-Write-Host "=== 1. Limpando diretórios de build ===" -ForegroundColor Cyan
+Write-Host "=== 1. Limpando diretórios de build e gerando bundle inlined limpo ===" -ForegroundColor Cyan
 if (Test-Path "$BUILD_DIR") { Remove-Item -Recurse -Force "$BUILD_DIR" }
 if (Test-Path "$ASSETS_DIR") { Remove-Item -Recurse -Force "$ASSETS_DIR" }
 New-Item -ItemType Directory -Path "$BUILD_DIR\classes" | Out-Null
 New-Item -ItemType Directory -Path "$BUILD_DIR\gen" | Out-Null
 New-Item -ItemType Directory -Path "$ASSETS_DIR" | Out-Null
 
-Write-Host "=== 2. Copiando index.html inlined para assets ===" -ForegroundColor Cyan
+& node "$ROOT\build_inlined_clean.cjs"
+
+Write-Host "=== 2. Copiando index.html inlined e assets para APK ===" -ForegroundColor Cyan
 Copy-Item "$ROOT\docs\index.html" "$ASSETS_DIR\index.html" -Force
 if (Test-Path "$ROOT\public\icon.svg") { Copy-Item "$ROOT\public\icon.svg" "$ASSETS_DIR\icon.svg" -Force }
 if (Test-Path "$ROOT\public\manifest.json") { Copy-Item "$ROOT\public\manifest.json" "$ASSETS_DIR\manifest.json" -Force }
+if (Test-Path "$ROOT\public\assets") { Copy-Item "$ROOT\public\assets" "$ASSETS_DIR\assets" -Recurse -Force }
 
 Write-Host "=== 3. Compilando Java com javac ===" -ForegroundColor Cyan
 & javac -source 8 -target 8 -d "$BUILD_DIR\classes" -cp "$ANDROID_JAR" "$APK_DIR\src\br\leis\estudo\MainActivity.java"
